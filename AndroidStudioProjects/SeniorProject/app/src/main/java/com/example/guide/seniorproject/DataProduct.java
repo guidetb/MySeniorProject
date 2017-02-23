@@ -6,5 +6,5 @@ package com.example.guide.seniorproject;
 
 public class DataProduct {
     public String ProducrName;
-    public float price;
+    public Double price;
 }
