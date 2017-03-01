@@ -1,0 +1,11 @@
+<application>
+  <component name="FindRecents">
+    <findStrings>
+      <find>GET</find>
+      <find>http</find>
+      <find>Reques</find>
+      <find>127</find>
+      <find>ada</find>
+    </findStrings>
+  </component>
+</application>

@@ -114,7 +114,7 @@ public class SearchActivity extends AppCompatActivity {
             try {
 
                 // Enter URL address where your php file resides
-                url = new URL("http://127.0.0.1/Myseniorproject/getData.php");
+                url = new URL("http://10.0.3.2/Myseniorproject/getData.php");
 
             } catch (MalformedURLException e) {
                 // TODO Auto-generated catch block
@@ -127,7 +127,7 @@ public class SearchActivity extends AppCompatActivity {
                 conn = (HttpURLConnection) url.openConnection();
                 conn.setReadTimeout(READ_TIMEOUT);
                 conn.setConnectTimeout(CONNECTION_TIMEOUT);
-                conn.setRequestMethod("GET");
+                conn.setRequestMethod("POST");
 
                 // setDoInput and setDoOutput to true as we send and recieve data
                 conn.setDoInput(true);
