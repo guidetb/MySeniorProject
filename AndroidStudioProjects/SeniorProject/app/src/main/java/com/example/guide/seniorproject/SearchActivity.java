@@ -1,11 +1,14 @@
 package com.example.guide.seniorproject;
 
+import android.app.LocalActivityManager;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.support.design.widget.TabLayout;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -13,6 +16,9 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TabHost;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -32,9 +38,15 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SearchActivity extends AppCompatActivity {
+import static com.example.guide.seniorproject.BIGCTab.data2;
+import static com.example.guide.seniorproject.TescoTab.data;
+import static com.example.guide.seniorproject.TescoTab.selectedTescoItems;
+
+
+public class SearchActivity extends MainActivity implements TabLayout.OnTabSelectedListener{
 
     // CONNECTION_TIMEOUT and READ_TIMEOUT are in milliseconds
+
 
     public static final int CONNECTION_TIMEOUT = 10000;
     public static final int READ_TIMEOUT = 15000;
@@ -42,12 +54,61 @@ public class SearchActivity extends AppCompatActivity {
     private AdapterProduct mAdapter;
 
     SearchView searchView = null;
+    private TabLayout tabLayout;
+    private ViewPager viewPager;
+    public static ArrayList<DataProduct> selectedTescoItems;
+    public static ArrayList<DataProduct> selectedBigCItems;
+
+    Button button1;
+    Button button2;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
+
+        tabLayout = (TabLayout) findViewById(R.id.tabLayout);
+
+        tabLayout.addTab(tabLayout.newTab().setText("TESCO"));
+        tabLayout.addTab(tabLayout.newTab().setText("BIGC"));
+        tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
+
+        viewPager = (ViewPager) findViewById(R.id.pager);
+
+        Pager adapter = new Pager(getSupportFragmentManager(),tabLayout.getTabCount());
+
+        viewPager.setAdapter(adapter);
+
+        selectedTescoItems = new ArrayList<>();
+        selectedBigCItems = new ArrayList<>();
+
+        button1 = (Button) findViewById(R.id.button1);
+        button1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                selectedTescoItems = TescoTab.getSelectedItems();
+                selectedBigCItems = BIGCTab.getSelectedItems();
+            }
+        });
+        button2 = (Button) findViewById(R.id.button2);
+        button2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Intent intent = new Intent(SearchActivity.this, AddedListProducts.class);
+                Bundle bundle = new Bundle();
+
+                bundle.putSerializable("selectedTescoItems", selectedTescoItems);
+                bundle.putSerializable("selectedBigCItems", selectedBigCItems);
+                intent.putExtras(bundle);
+                startActivity(intent);
+            }
+        });
+
+        tabLayout.setOnTabSelectedListener(this);
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu){
         // adds item to action bar
@@ -75,156 +136,31 @@ public class SearchActivity extends AppCompatActivity {
 
     // Every time when you press search button on keypad an Activity is recreated which in turn calls this function
     @Override
-    protected void onNewIntent(Intent intent) {
+    public void onNewIntent(Intent intent) {
         // Get search query and create object of class AsyncFetch
         if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
             String query = intent.getStringExtra(SearchManager.QUERY);
             if (searchView != null) {
                 searchView.clearFocus();
             }
-            new AsyncFetch(query).execute();
+            new TescoTab.AsyncFetch(query).execute();
+            new BIGCTab.AsyncFetch(query).execute();
 
         }
     }
 
-    private class AsyncFetch extends AsyncTask<String, String, String> {
+    @Override
+    public void onTabSelected(TabLayout.Tab tab) {
+        viewPager.setCurrentItem(tab.getPosition());
+    }
 
-        ProgressDialog pdLoading = new ProgressDialog(SearchActivity.this);
-        HttpURLConnection conn;
-        URL url = null;
-        String searchQuery;
+    @Override
+    public void onTabUnselected(TabLayout.Tab tab) {
 
-        public AsyncFetch(String searchQuery){
-            this.searchQuery=searchQuery;
-        }
+    }
 
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            //this method will be running on UI thread
-            pdLoading.setMessage("\tLoading...");
-            pdLoading.setCancelable(false);
-            pdLoading.show();
-
-        }
-
-        @Override
-        protected String doInBackground(String... params) {
-            try {
-
-                // Enter URL address where your php file resides
-                url = new URL("http://10.0.3.2/Myseniorproject/getData.php");
-
-            } catch (MalformedURLException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                return e.toString();
-            }
-            try {
-
-                // Setup HttpURLConnection class to send and receive data from php and mysql
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setReadTimeout(READ_TIMEOUT);
-                conn.setConnectTimeout(CONNECTION_TIMEOUT);
-                conn.setRequestMethod("POST");
-
-                // setDoInput and setDoOutput to true as we send and recieve data
-                conn.setDoInput(true);
-                conn.setDoOutput(true);
-
-                // add parameter to our above url
-                Uri.Builder builder = new Uri.Builder().appendQueryParameter("searchQuery", searchQuery);
-                String query = builder.build().getEncodedQuery();
-
-                OutputStream os = conn.getOutputStream();
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
-                writer.write(query);
-                writer.flush();
-                writer.close();
-                os.close();
-                conn.connect();
-
-            } catch (IOException e1) {
-                // TODO Auto-generated catch block
-                e1.printStackTrace();
-                return e1.toString();
-            }
-
-            try {
-
-                int response_code = conn.getResponseCode();
-
-                // Check if successful connection made
-                if (response_code == HttpURLConnection.HTTP_OK) {
-
-                    // Read data sent from server
-                    InputStream input = conn.getInputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-                    StringBuilder result = new StringBuilder();
-                    String line;
-
-                    while ((line = reader.readLine()) != null) {
-                        result.append(line);
-                    }
-
-                    // Pass data to onPostExecute method
-                    return (result.toString());
-
-                } else {
-                    return("Connection error");
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                return e.toString();
-            } finally {
-                conn.disconnect();
-            }
-
-
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-
-            //this method will be running on UI thread
-            pdLoading.dismiss();
-            List<DataProduct> data=new ArrayList<>();
-
-            pdLoading.dismiss();
-            if(result.equals("no rows")) {
-                Toast.makeText(SearchActivity.this, "No Results found for entered query", Toast.LENGTH_LONG).show();
-            }else{
-
-                try {
-
-                    JSONArray jArray = new JSONArray(result);
-
-                    // Extract data from json and store into ArrayList as class objects
-                    for (int i = 0; i < jArray.length(); i++) {
-                        JSONObject json_data = jArray.getJSONObject(i);
-                        DataProduct productData = new DataProduct();
-                        productData.ProducrName = json_data.getString("product_name");
-                        productData.price = json_data.getDouble("price");
-                        data.add(productData);
-                    }
-
-                    // Setup and Handover data to recyclerview
-                    mRVProduct = (RecyclerView) findViewById(R.id.productPriceList);
-                    mAdapter = new AdapterProduct(SearchActivity.this, data);
-                    mRVProduct.setAdapter(mAdapter);
-                    mRVProduct.setLayoutManager(new LinearLayoutManager(SearchActivity.this));
-
-                } catch (JSONException e) {
-                    // You to understand what actually error is and handle it appropriately
-                    Toast.makeText(SearchActivity.this, e.toString(), Toast.LENGTH_LONG).show();
-                    Toast.makeText(SearchActivity.this, result.toString(), Toast.LENGTH_LONG).show();
-                }
-
-            }
-
-        }
+    @Override
+    public void onTabReselected(TabLayout.Tab tab) {
 
     }
 

@@ -6,6 +6,12 @@
       <find>Reques</find>
       <find>127</find>
       <find>ada</find>
+      <find>id</find>
+      <find>text</find>
+      <find>params</find>
+      <find>productP</find>
+      <find>result</find>
+      <find>stringBui</find>
     </findStrings>
   </component>
 </application>
